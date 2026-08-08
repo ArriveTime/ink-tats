@@ -5,84 +5,196 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>InkTat.com | Admin Dashboard</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Admin Lockscreen Overlay Styles */
+    .lockscreen-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: var(--bg-color);
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    .login-box {
+      background-color: var(--card-bg);
+      border: 2px solid var(--accent-color);
+      border-radius: 12px;
+      padding: 2.5rem;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .login-box h2 {
+      margin-bottom: 1rem;
+    }
+    .login-box input[type="password"] {
+      width: 100%;
+      padding: 0.8rem;
+      margin: 1rem 0;
+      font-size: 1.1rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      text-align: center;
+    }
+    .login-error {
+      color: var(--accent-color);
+      font-weight: bold;
+      margin-top: 0.5rem;
+      display: none;
+    }
+    /* Hide dashboard content until unlocked */
+    .dashboard-hidden {
+      display: none;
+    }
+  </style>
 </head>
 <body class="admin-page">
 
-  <!-- Accessible Header & Navigation -->
-  <header class="site-header">
-    <div class="header-container">
-      <h1 class="logo">InkTat<span>.com</span> <small style="font-size:1rem; color:var(--text-muted);">(Admin Portal)</small></h1>
-      <nav aria-label="Admin Navigation">
-        <ul class="nav-links">
-          <li><a href="index.html">&larr; Back to Main Site</a></li>
-        </ul>
-      </nav>
-      <button id="contrast-toggle" class="btn-accessibility" aria-label="Toggle High Contrast Mode">
-        High Contrast
-      </button>
+  <!-- Password Protection Screen -->
+  <div id="admin-lockscreen" class="lockscreen-overlay">
+    <div class="login-box">
+      <h2>InkTat Admin Portal</h2>
+      <p class="section-desc">Enter password to access analytics</p>
+      <form id="admin-login-form">
+        <input type="password" id="admin-password" placeholder="Enter Password" required autofocus>
+        <button type="submit" class="submit-btn">Unlock Portal</button>
+      </form>
+      <p id="login-error-msg" class="login-error">Incorrect Password. Try again.</p>
+      <p style="margin-top: 1.5rem;"><a href="index.html" style="color: var(--text-muted);">&larr; Return to main site</a></p>
     </div>
-  </header>
+  </div>
 
-  <main class="main-content">
-    
-    <!-- Hero Banner -->
-    <section class="hero-section">
-      <h2>Site Analytics & Real-Time Stats</h2>
-      <p>Live server timestamp and visitor telemetry for InkTat.com</p>
-    </section>
-
-    <!-- Admin Metric Cards -->
-    <div class="card-grid">
-      
-      <!-- Visitor Count Card -->
-      <article class="site-card metric-card">
-        <h3>Total Site Visitors</h3>
-        <div class="metric-value" id="visitor-count">Loading...</div>
-        <p class="section-desc">Tracked across all unique page visits.</p>
-      </article>
-
-      <!-- Live Date Card -->
-      <article class="site-card metric-card">
-        <h3>Current Date</h3>
-        <div class="metric-value" id="live-date">--/--/----</div>
-        <p class="section-desc">System Local Date</p>
-      </article>
-
-      <!-- Live Clock Card -->
-      <article class="site-card metric-card">
-        <h3>Real-Time Clock</h3>
-        <div class="metric-value" id="live-time">00:00:00 AM</div>
-        <p class="section-desc">Updates continuously in real time</p>
-      </article>
-
-    </div>
-
-    <!-- Recent Visit Log Table -->
-    <section class="content-section" style="margin-top: 2.5rem;">
-      <h2>Recent Session Activity Log</h2>
-      <div class="table-container">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Session ID</th>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="session-log-body">
-            <!-- Populated dynamically by script.js -->
-          </tbody>
-        </table>
+  <!-- Protected Admin Content -->
+  <div id="admin-dashboard" class="dashboard-hidden">
+    <!-- Accessible Header & Navigation -->
+    <header class="site-header">
+      <div class="header-container">
+        <h1 class="logo">InkTat<span>.com</span> <small style="font-size:1rem; color:var(--text-muted);">(Admin Portal)</small></h1>
+        <nav aria-label="Admin Navigation">
+          <ul class="nav-links">
+            <li><a href="index.html">&larr; Back to Main Site</a></li>
+            <li><a href="#" id="lock-admin-btn" style="color: var(--accent-color);">Lock Session</a></li>
+          </ul>
+        </nav>
+        <button id="contrast-toggle" class="btn-accessibility" aria-label="Toggle High Contrast Mode">
+          High Contrast
+        </button>
       </div>
-    </section>
+    </header>
 
-  </main>
+    <main class="main-content">
+      
+      <!-- Hero Banner -->
+      <section class="hero-section">
+        <h2>Site Analytics & Real-Time Stats</h2>
+        <p>Live server timestamp and visitor telemetry for InkTat.com</p>
+      </section>
 
-  <footer class="site-footer">
-    <p>&copy; 2026 InkTat.com Admin System — All rights reserved.</p>
-  </footer>
+      <!-- Admin Metric Cards -->
+      <div class="card-grid">
+        
+        <!-- Visitor Count Card -->
+        <article class="site-card metric-card">
+          <h3>Total Site Visitors</h3>
+          <div class="metric-value" id="visitor-count">Loading...</div>
+          <p class="section-desc">Tracked across all unique page visits.</p>
+        </article>
+
+        <!-- Live Date Card -->
+        <article class="site-card metric-card">
+          <h3>Current Date</h3>
+          <div class="metric-value" id="live-date">--/--/----</div>
+          <p class="section-desc">System Local Date</p>
+        </article>
+
+        <!-- Live Clock Card -->
+        <article class="site-card metric-card">
+          <h3>Real-Time Clock</h3>
+          <div class="metric-value" id="live-time">00:00:00 AM</div>
+          <p class="section-desc">Updates continuously in real time</p>
+        </article>
+
+      </div>
+
+      <!-- Recent Visit Log Table -->
+      <section class="content-section" style="margin-top: 2.5rem;">
+        <h2>Recent Session Activity Log</h2>
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Session ID</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="session-log-body">
+              <!-- Populated dynamically by script.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <p>&copy; 2026 InkTat.com Admin System — All rights reserved.</p>
+    </footer>
+  </div>
 
   <script src="script.js"></script>
+  <script>
+    // In-browser password security handler
+    document.addEventListener("DOMContentLoaded", () => {
+      // SET YOUR DESIRED PASSWORD HERE:
+      const ADMIN_PASSWORD = "inktat2026";
+
+      const lockscreen = document.getElementById("admin-lockscreen");
+      const dashboard = document.getElementById("admin-dashboard");
+      const loginForm = document.getElementById("admin-login-form");
+      const passwordInput = document.getElementById("admin-password");
+      const errorMsg = document.getElementById("login-error-msg");
+      const lockBtn = document.getElementById("lock-admin-btn");
+
+      // Check session state
+      if (sessionStorage.getItem("inktat_admin_authenticated") === "true") {
+        unlockDashboard();
+      }
+
+      loginForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (passwordInput.value === ADMIN_PASSWORD) {
+          sessionStorage.setItem("inktat_admin_authenticated", "true");
+          unlockDashboard();
+        } else {
+          errorMsg.style.display = "block";
+          passwordInput.value = "";
+          passwordInput.focus();
+        }
+      });
+
+      if (lockBtn) {
+        lockBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          sessionStorage.removeItem("inktat_admin_authenticated");
+          location.reload();
+        });
+      }
+
+      function unlockDashboard() {
+        lockscreen.style.display = "none";
+        dashboard.classList.remove("dashboard-hidden");
+      }
+    });
+  </script>
 </body>
 </html>
