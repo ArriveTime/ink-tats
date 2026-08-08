@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InkTat.com | Admin Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="admin-page">
+
+  <header class="site-header">
+    <div class="header-container">
+      <h1 class="logo">InkTat<span>.com</span> <small style="font-size:1rem; color:var(--text-muted);">(Admin Portal)</small></h1>
+      <nav aria-label="Admin Navigation">
+        <ul class="nav-links">
+          <li><a href="index.html">&larr; Back to Main Site</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <section class="hero-section">
+      <h2>Site Analytics & Real-Time Stats</h2>
+      <p>Live server timestamp and visitor telemetry for InkTat.com</p>
+    </section>
+
+    <!-- Admin Metric Cards -->
+    <div class="card-grid">
+      
+      <!-- Visitor Count Card -->
+      <article class="site-card metric-card">
+        <h3>Total Site Visitors</h3>
+        <div class="metric-value" id="visitor-count">Loading...</div>
+        <p class="section-desc">Tracked across all unique page visits.</p>
+      </article>
+
+      <!-- Live Date Card -->
+      <article class="site-card metric-card">
+        <h3>Current Date</h3>
+        <div class="metric-value" id="live-date">--/--/----</div>
+        <p class="section-desc">System Local Date</p>
+      </article>
+
+      <!-- Live Clock Card -->
+      <article class="site-card metric-card">
+        <h3>Real-Time Clock</h3>
+        <div class="metric-value" id="live-time">00:00:00 AM</div>
+        <p class="section-desc">Updates continuously in real time</p>
+      </article>
+
+    </div>
+
+    <!-- Recent Visit Log Table -->
+    <section class="content-section" style="margin-top: 2.5rem;">
+      <h2>Recent Session Activity Log</h2>
+      <div class="table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Session ID</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="session-log-body">
+            <!-- Populated dynamically by script.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 InkTat.com Admin System</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
