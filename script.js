@@ -1,17 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Unique namespace key for InkTat site counter
-  const COUNTER_NAMESPACE = "inktat_site_2026";
-  const COUNTER_KEY = "visitors";
-  const API_BASE = `https://api.counterapi.dev/v1/${COUNTER_NAMESPACE}/${COUNTER_KEY}`;
+  const COUNTER_NAMESPACE = "inktat_official_2026";
+  const COUNTER_KEY = "visits";
+  
+  // CountAPI endpoint
+  const API_GET = `https://api.countapi.xyz/get/${COUNTER_NAMESPACE}/${COUNTER_KEY}`;
+  const API_HIT = `https://api.countapi.xyz/hit/${COUNTER_NAMESPACE}/${COUNTER_KEY}`;
 
-  // Check if current page is Admin or Main Site
   const isAdminPage = document.body.classList.contains("admin-page");
 
   if (!isAdminPage) {
-    // --- MAIN SITE LOGIC ---
-    incrementVisitorCount(API_BASE);
+    // --- MAIN HOMEPAGE ---
+    registerVisitorHit(API_HIT);
 
-    // High Contrast Toggle
     const contrastToggle = document.getElementById("contrast-toggle");
     if (contrastToggle) {
       contrastToggle.addEventListener("click", () => {
@@ -22,53 +22,80 @@ document.addEventListener("DOMContentLoaded", () => {
     loadTattooNews();
     setupGalleryUploads();
   } else {
-    // --- ADMIN PAGE LOGIC ---
+    // --- ADMIN PAGE ---
+    // High contrast support for admin
+    const contrastToggle = document.getElementById("contrast-toggle");
+    if (contrastToggle) {
+      contrastToggle.addEventListener("click", () => {
+        document.body.classList.toggle("high-contrast");
+      });
+    }
+
+    // Initialize clock immediately
     startLiveClock();
-    fetchVisitorCount(API_BASE);
-    renderSessionLog();
+
+    // Check if dashboard is already unlocked (or listen for unlock)
+    const checkUnlockAndLoad = setInterval(() => {
+      const dashboard = document.getElementById("admin-dashboard");
+      if (dashboard && !dashboard.classList.contains("dashboard-hidden")) {
+        fetchVisitorCount(API_GET);
+        renderSessionLog();
+        clearInterval(checkUnlockAndLoad);
+      }
+    }, 300);
   }
 });
 
-/* Visitor Counter Functions */
-function incrementVisitorCount(apiEndpoint) {
-  // Call API to increment hit counter
-  fetch(`${apiEndpoint}/up`)
+/* Visitor Counter - Increment on Main Page */
+function registerVisitorHit(apiEndpoint) {
+  fetch(apiEndpoint)
     .then(res => res.json())
     .then(data => {
-      // Record local session log entry
-      saveSessionLog(data.count || 1);
+      if (data && data.value) {
+        localStorage.setItem("inktat_last_known_count", data.value);
+        saveSessionLog(data.value);
+      }
     })
     .catch(() => {
-      // Local fallback counter if API is offline
-      let localCount = parseInt(localStorage.getItem("inktat_visitor_count") || "0") + 1;
-      localStorage.setItem("inktat_visitor_count", localCount.toString());
-      saveSessionLog(localCount);
+      // Fallback local tracking if public API is blocked by adblockers
+      let count = parseInt(localStorage.getItem("inktat_local_counter") || "100") + 1;
+      localStorage.setItem("inktat_local_counter", count);
+      localStorage.setItem("inktat_last_known_count", count);
+      saveSessionLog(count);
     });
 }
 
+/* Visitor Counter - Fetch Display for Admin */
 function fetchVisitorCount(apiEndpoint) {
   const countDisplay = document.getElementById("visitor-count");
+  if (!countDisplay) return;
 
   fetch(apiEndpoint)
     .then(res => res.json())
     .then(data => {
-      if (countDisplay) countDisplay.textContent = data.count.toLocaleString();
+      if (data && data.value !== undefined) {
+        countDisplay.textContent = Number(data.value).toLocaleString();
+      } else {
+        useFallbackCount(countDisplay);
+      }
     })
     .catch(() => {
-      // Fallback display
-      let localCount = localStorage.getItem("inktat_visitor_count") || "1";
-      if (countDisplay) countDisplay.textContent = parseInt(localCount).toLocaleString();
+      useFallbackCount(countDisplay);
     });
 }
 
-/* Real-Time Clock & Date Function */
+function useFallbackCount(element) {
+  let savedCount = localStorage.getItem("inktat_last_known_count") || localStorage.getItem("inktat_local_counter") || "1";
+  element.textContent = Number(savedCount).toLocaleString();
+}
+
+/* Real-Time Clock & Date */
 function startLiveClock() {
   const dateDisplay = document.getElementById("live-date");
   const timeDisplay = document.getElementById("live-time");
 
   function updateClock() {
     const now = new Date();
-    
     if (dateDisplay) {
       dateDisplay.textContent = now.toLocaleDateString(undefined, {
         weekday: 'short',
@@ -77,30 +104,29 @@ function startLiveClock() {
         day: 'numeric'
       });
     }
-
     if (timeDisplay) {
       timeDisplay.textContent = now.toLocaleTimeString();
     }
   }
 
   updateClock();
-  setInterval(updateClock, 1000); // Updates every second
+  setInterval(updateClock, 1000);
 }
 
-/* Local Session Logging for Admin View */
+/* Local Session Logging */
 function saveSessionLog(currentCount) {
   let logs = JSON.parse(localStorage.getItem("inktat_session_logs") || "[]");
   const now = new Date();
   
   const newLog = {
-    id: `#${1000 + (logs.length + 1)}`,
+    id: `#${Math.floor(10000 + Math.random() * 90000)}`,
     date: now.toLocaleDateString(),
     time: now.toLocaleTimeString(),
     totalCountAtVisit: currentCount
   };
 
   logs.unshift(newLog);
-  if (logs.length > 15) logs.pop(); // Keep last 15 records
+  if (logs.length > 15) logs.pop();
   localStorage.setItem("inktat_session_logs", JSON.stringify(logs));
 }
 
@@ -111,7 +137,7 @@ function renderSessionLog() {
   let logs = JSON.parse(localStorage.getItem("inktat_session_logs") || "[]");
 
   if (logs.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No recent session data logged yet. Visit the main homepage to record visits.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No recent session activity recorded. Visit the home page to trigger visit logs.</td></tr>`;
     return;
   }
 
@@ -120,7 +146,7 @@ function renderSessionLog() {
       <td>${log.id}</td>
       <td>${log.date}</td>
       <td>${log.time}</td>
-      <td><span style="color: #00ff66;">Active Session</span> (Total Hits: ${log.totalCountAtVisit})</td>
+      <td><span style="color: #00ff66;">Logged Visit</span> (Count: ${log.totalCountAtVisit})</td>
     </tr>
   `).join("");
 }
