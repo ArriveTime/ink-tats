@@ -2,11 +2,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const COUNTER_NAMESPACE = "inktat_official_2026";
   const COUNTER_KEY = "visits";
   
-  // CountAPI endpoint
   const API_GET = `https://api.countapi.xyz/get/${COUNTER_NAMESPACE}/${COUNTER_KEY}`;
   const API_HIT = `https://api.countapi.xyz/hit/${COUNTER_NAMESPACE}/${COUNTER_KEY}`;
 
   const isAdminPage = document.body.classList.contains("admin-page");
+
+  // Ensure user token exists for ban checks
+  getUserToken();
 
   if (!isAdminPage) {
     // --- MAIN HOMEPAGE ---
@@ -23,7 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
     setupGalleryUploads();
   } else {
     // --- ADMIN PAGE ---
-    // High contrast support for admin
     const contrastToggle = document.getElementById("contrast-toggle");
     if (contrastToggle) {
       contrastToggle.addEventListener("click", () => {
@@ -31,22 +32,38 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    // Initialize clock immediately
     startLiveClock();
 
-    // Check if dashboard is already unlocked (or listen for unlock)
     const checkUnlockAndLoad = setInterval(() => {
       const dashboard = document.getElementById("admin-dashboard");
       if (dashboard && !dashboard.classList.contains("dashboard-hidden")) {
         fetchVisitorCount(API_GET);
         renderSessionLog();
+        renderAdminModerationQueue();
+        renderBannedUsersTable();
         clearInterval(checkUnlockAndLoad);
       }
     }, 300);
   }
 });
 
-/* Visitor Counter - Increment on Main Page */
+/* Get or Generate Device/User Identifier */
+function getUserToken() {
+  let token = localStorage.getItem("inktat_user_token");
+  if (!token) {
+    token = "USER_" + Math.random().toString(36).substring(2, 10).toUpperCase();
+    localStorage.setItem("inktat_user_token", token);
+  }
+  return token;
+}
+
+function isUserBanned() {
+  const userToken = getUserToken();
+  const bannedList = JSON.parse(localStorage.getItem("inktat_banned_tokens") || "[]");
+  return bannedList.some(b => b.token === userToken);
+}
+
+/* Visitor Counter Functions */
 function registerVisitorHit(apiEndpoint) {
   fetch(apiEndpoint)
     .then(res => res.json())
@@ -57,7 +74,6 @@ function registerVisitorHit(apiEndpoint) {
       }
     })
     .catch(() => {
-      // Fallback local tracking if public API is blocked by adblockers
       let count = parseInt(localStorage.getItem("inktat_local_counter") || "100") + 1;
       localStorage.setItem("inktat_local_counter", count);
       localStorage.setItem("inktat_last_known_count", count);
@@ -65,7 +81,6 @@ function registerVisitorHit(apiEndpoint) {
     });
 }
 
-/* Visitor Counter - Fetch Display for Admin */
 function fetchVisitorCount(apiEndpoint) {
   const countDisplay = document.getElementById("visitor-count");
   if (!countDisplay) return;
@@ -191,7 +206,7 @@ function loadTattooNews() {
   `;
 }
 
-/* Community Upload Handler */
+/* Main Site Gallery Upload & Comment Setup */
 function setupGalleryUploads() {
   const uploadForm = document.getElementById("upload-form");
   const postsContainer = document.getElementById("posts-container");
@@ -203,6 +218,11 @@ function setupGalleryUploads() {
   uploadForm.addEventListener("submit", (e) => {
     e.preventDefault();
 
+    if (isUserBanned()) {
+      alert("Your account/device has been banned from submitting posts due to policy violations.");
+      return;
+    }
+
     const title = document.getElementById("tat-title").value;
     const artist = document.getElementById("artist-name").value || "Unknown Artist";
     const imageFile = document.getElementById("tat-image").files[0];
@@ -213,6 +233,7 @@ function setupGalleryUploads() {
     reader.onload = function (event) {
       const newPost = {
         id: Date.now(),
+        userToken: getUserToken(),
         title: title,
         artist: artist,
         imageData: event.target.result,
@@ -248,7 +269,7 @@ function setupGalleryUploads() {
         <div class="comments-section">
           <h4>Comments (${post.comments.length})</h4>
           <ul class="comment-list">
-            ${post.comments.map(c => `<li class="comment-item">${escapeHtml(c)}</li>`).join("")}
+            ${post.comments.map(c => `<li class="comment-item">${escapeHtml(c.text || c)}</li>`).join("")}
           </ul>
           <form class="comment-form" data-post-id="${post.id}">
             <input type="text" placeholder="Add a comment..." required aria-label="Add a comment">
@@ -263,13 +284,21 @@ function setupGalleryUploads() {
     document.querySelectorAll(".comment-form").forEach(form => {
       form.addEventListener("submit", (e) => {
         e.preventDefault();
+
+        if (isUserBanned()) {
+          alert("Your account/device has been banned from posting comments.");
+          return;
+        }
+
         const postId = Number(form.getAttribute("data-post-id"));
         const commentInput = form.querySelector("input");
         const commentText = commentInput.value.trim();
 
         if (commentText) {
           savedPosts = savedPosts.map(p => {
-            if (p.id === postId) p.comments.push(commentText);
+            if (p.id === postId) {
+              p.comments.push({ id: Date.now(), userToken: getUserToken(), text: commentText });
+            }
             return p;
           });
           localStorage.setItem("inktat_posts", JSON.stringify(savedPosts));
@@ -282,4 +311,119 @@ function setupGalleryUploads() {
   function escapeHtml(str) {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
+}
+
+/* ADMIN MODERATION & BAN LOGIC */
+function renderAdminModerationQueue() {
+  const container = document.getElementById("admin-moderation-list");
+  if (!container) return;
+
+  let posts = JSON.parse(localStorage.getItem("inktat_posts") || "[]");
+
+  if (posts.length === 0) {
+    container.innerHTML = "<p>No active community posts to moderate.</p>";
+    return;
+  }
+
+  container.innerHTML = "";
+
+  posts.forEach(post => {
+    const card = document.createElement("article");
+    card.className = "post-card";
+    card.style.border = "1px solid var(--accent-color)";
+
+    card.innerHTML = `
+      <h3>${escapeHtml(post.title)}</h3>
+      <p><strong>Poster Identifier:</strong> <code>${post.userToken || "Unknown"}</code></p>
+      <img src="${post.imageData}" alt="Post moderation preview">
+      
+      <div style="margin: 1rem 0;">
+        <button class="btn-delete" onclick="adminDeletePost(${post.id})">Delete Post</button>
+        <button class="btn-ban" onclick="adminBanUser('${post.userToken}')">Ban User</button>
+      </div>
+
+      <div class="comments-section">
+        <h4>Comments (${post.comments.length})</h4>
+        <ul class="comment-list">
+          ${post.comments.map(c => `
+            <li class="comment-item" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>${escapeHtml(c.text || c)}</span>
+              <button class="btn-delete" style="padding:0.2rem 0.5rem; font-size:0.8rem;" onclick="adminDeleteComment(${post.id}, ${c.id || 0})">Delete</button>
+            </li>
+          `).join("")}
+        </ul>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+window.adminDeletePost = function(postId) {
+  if (confirm("Are you sure you want to delete this tattoo post?")) {
+    let posts = JSON.parse(localStorage.getItem("inktat_posts") || "[]");
+    posts = posts.filter(p => p.id !== postId);
+    localStorage.setItem("inktat_posts", JSON.stringify(posts));
+    renderAdminModerationQueue();
+  }
+};
+
+window.adminDeleteComment = function(postId, commentId) {
+  let posts = JSON.parse(localStorage.getItem("inktat_posts") || "[]");
+  posts = posts.map(p => {
+    if (p.id === postId) {
+      p.comments = p.comments.filter(c => (c.id || 0) !== commentId);
+    }
+    return p;
+  });
+  localStorage.setItem("inktat_posts", JSON.stringify(posts));
+  renderAdminModerationQueue();
+};
+
+window.adminBanUser = function(userToken) {
+  if (!userToken || userToken === "Unknown") {
+    alert("Cannot ban unknown identifier.");
+    return;
+  }
+
+  if (confirm(`Are you sure you want to BAN user ${userToken}? They will no longer be able to post or comment.`)) {
+    let banned = JSON.parse(localStorage.getItem("inktat_banned_tokens") || "[]");
+    if (!banned.some(b => b.token === userToken)) {
+      banned.push({ token: userToken, date: new Date().toLocaleDateString() });
+      localStorage.setItem("inktat_banned_tokens", JSON.stringify(banned));
+    }
+    renderBannedUsersTable();
+    alert(`User ${userToken} has been banned.`);
+  }
+};
+
+function renderBannedUsersTable() {
+  const tbody = document.getElementById("banned-users-body");
+  if (!tbody) return;
+
+  let banned = JSON.parse(localStorage.getItem("inktat_banned_tokens") || "[]");
+
+  if (banned.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;">No users or devices are currently banned.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = banned.map(b => `
+    <tr>
+      <td><code>${b.token}</code></td>
+      <td>${b.date}</td>
+      <td><button class="btn-delete" style="background-color:#444;" onclick="adminUnbanUser('${b.token}')">Unban</button></td>
+    </tr>
+  `).join("");
+}
+
+window.adminUnbanUser = function(userToken) {
+  let banned = JSON.parse(localStorage.getItem("inktat_banned_tokens") || "[]");
+  banned = banned.filter(b => b.token !== userToken);
+  localStorage.setItem("inktat_banned_tokens", JSON.stringify(banned));
+  renderBannedUsersTable();
+};
+
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
