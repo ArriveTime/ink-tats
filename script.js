@@ -7,12 +7,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const isAdminPage = document.body.classList.contains("admin-page");
 
-  // Ensure user token exists for ban checks
   getUserToken();
 
   if (!isAdminPage) {
     // --- MAIN HOMEPAGE ---
     registerVisitorHit(API_HIT);
+    trackSessionDurationAndLocation();
 
     const contrastToggle = document.getElementById("contrast-toggle");
     if (contrastToggle) {
@@ -70,14 +70,12 @@ function registerVisitorHit(apiEndpoint) {
     .then(data => {
       if (data && data.value) {
         localStorage.setItem("inktat_last_known_count", data.value);
-        saveSessionLog(data.value);
       }
     })
     .catch(() => {
       let count = parseInt(localStorage.getItem("inktat_local_counter") || "100") + 1;
       localStorage.setItem("inktat_local_counter", count);
       localStorage.setItem("inktat_last_known_count", count);
-      saveSessionLog(count);
     });
 }
 
@@ -128,19 +126,72 @@ function startLiveClock() {
   setInterval(updateClock, 1000);
 }
 
-/* Local Session Logging */
-function saveSessionLog(currentCount) {
-  let logs = JSON.parse(localStorage.getItem("inktat_session_logs") || "[]");
+/* GEOLOCATION & DURATION TRACKER */
+function trackSessionDurationAndLocation() {
+  const startTime = Date.now();
   const now = new Date();
+  const initialDate = now.toLocaleDateString();
+  const initialTime = now.toLocaleTimeString();
+
+  let locationString = "Detecting Location...";
+
+  // Fetch City and State from IP Geolocation API
+  fetch("https://ipapi.co/json/")
+    .then(res => res.json())
+    .then(data => {
+      if (data.city && data.region_code) {
+        locationString = `${data.city}, ${data.region_code}`;
+      } else if (data.city && data.region) {
+        locationString = `${data.city}, ${data.region}`;
+      } else {
+        locationString = "United States";
+      }
+      updateCurrentSessionLog(locationString, initialDate, initialTime, 0);
+    })
+    .catch(() => {
+      locationString = "United States";
+      updateCurrentSessionLog(locationString, initialDate, initialTime, 0);
+    });
+
+  // Active Timer Updates Duration Every Second
+  setInterval(() => {
+    const secondsElapsed = Math.floor((Date.now() - startTime) / 1000);
+    updateCurrentSessionLog(locationString, initialDate, initialTime, secondsElapsed);
+  }, 1000);
+}
+
+function updateCurrentSessionLog(location, date, time, durationSeconds) {
+  let logs = JSON.parse(localStorage.getItem("inktat_session_logs") || "[]");
   
-  const newLog = {
-    id: `#${Math.floor(10000 + Math.random() * 90000)}`,
-    date: now.toLocaleDateString(),
-    time: now.toLocaleTimeString(),
-    totalCountAtVisit: currentCount
+  // Format Duration into mm:ss or hh:mm:ss
+  let formattedDuration = "";
+  const hrs = Math.floor(durationSeconds / 3600);
+  const mins = Math.floor((durationSeconds % 3600) / 60);
+  const secs = durationSeconds % 60;
+
+  if (hrs > 0) {
+    formattedDuration = `${hrs}h ${mins}m ${secs}s`;
+  } else if (mins > 0) {
+    formattedDuration = `${mins}m ${secs}s`;
+  } else {
+    formattedDuration = `${secs}s`;
+  }
+
+  const currentLog = {
+    location: location,
+    date: date,
+    time: time,
+    duration: formattedDuration,
+    timestamp: Date.now()
   };
 
-  logs.unshift(newLog);
+  // Update or Add Current Active Visit
+  if (logs.length > 0 && (Date.now() - logs[0].timestamp < 86400000) && logs[0].date === date && logs[0].time === time) {
+    logs[0] = currentLog;
+  } else {
+    logs.unshift(currentLog);
+  }
+
   if (logs.length > 15) logs.pop();
   localStorage.setItem("inktat_session_logs", JSON.stringify(logs));
 }
@@ -152,16 +203,16 @@ function renderSessionLog() {
   let logs = JSON.parse(localStorage.getItem("inktat_session_logs") || "[]");
 
   if (logs.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No recent session activity recorded. Visit the home page to trigger visit logs.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No recent visitor activity logged yet. Visit the main site to record hits.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = logs.map(log => `
     <tr>
-      <td>${log.id}</td>
+      <td><strong>${log.location || "United States"}</strong></td>
       <td>${log.date}</td>
       <td>${log.time}</td>
-      <td><span style="color: #00ff66;">Logged Visit</span> (Count: ${log.totalCountAtVisit})</td>
+      <td><span style="color: #00ff66;">${log.duration || "0s"}</span></td>
     </tr>
   `).join("");
 }
