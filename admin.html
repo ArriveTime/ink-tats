@@ -8,6 +8,7 @@
 </head>
 <body class="admin-page">
 
+  <!-- Accessible Header & Navigation -->
   <header class="site-header">
     <div class="header-container">
       <h1 class="logo">InkTat<span>.com</span> <small style="font-size:1rem; color:var(--text-muted);">(Admin Portal)</small></h1>
@@ -16,10 +17,15 @@
           <li><a href="index.html">&larr; Back to Main Site</a></li>
         </ul>
       </nav>
+      <button id="contrast-toggle" class="btn-accessibility" aria-label="Toggle High Contrast Mode">
+        High Contrast
+      </button>
     </div>
   </header>
 
   <main class="main-content">
+    
+    <!-- Hero Banner -->
     <section class="hero-section">
       <h2>Site Analytics & Real-Time Stats</h2>
       <p>Live server timestamp and visitor telemetry for InkTat.com</p>
@@ -70,10 +76,11 @@
         </table>
       </div>
     </section>
+
   </main>
 
   <footer class="site-footer">
-    <p>&copy; 2026 InkTat.com Admin System</p>
+    <p>&copy; 2026 InkTat.com Admin System — All rights reserved.</p>
   </footer>
 
   <script src="script.js"></script>
