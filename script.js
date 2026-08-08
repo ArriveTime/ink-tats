@@ -126,34 +126,49 @@ function startLiveClock() {
   setInterval(updateClock, 1000);
 }
 
-/* GEOLOCATION & DURATION TRACKER */
+/* ENHANCED CITY & STATE GEOLOCATION TRACKER */
 function trackSessionDurationAndLocation() {
   const startTime = Date.now();
   const now = new Date();
   const initialDate = now.toLocaleDateString();
   const initialTime = now.toLocaleTimeString();
 
-  let locationString = "Detecting Location...";
+  let locationString = "Detecting City & State...";
 
-  // Fetch City & State from IP Geolocation API
-  fetch("https://ipapi.co/json/")
+  function applyLocation(loc) {
+    locationString = loc;
+    updateCurrentSessionLog(locationString, initialDate, initialTime, 0);
+  }
+
+  // Primary API: ipwho.is (Unblocked, CORS-friendly)
+  fetch("https://ipwho.is/")
     .then(res => res.json())
     .then(data => {
-      if (data.city && data.region_code) {
-        locationString = `${data.city}, ${data.region_code}`;
-      } else if (data.city && data.region) {
-        locationString = `${data.city}, ${data.region}`;
+      if (data && data.success && data.city) {
+        const state = data.region_code || data.region || "";
+        applyLocation(`${data.city}${state ? ', ' + state : ''}`);
       } else {
-        locationString = "United States";
+        throw new Error("Primary IP API missed city");
       }
-      updateCurrentSessionLog(locationString, initialDate, initialTime, 0);
     })
     .catch(() => {
-      locationString = "United States";
-      updateCurrentSessionLog(locationString, initialDate, initialTime, 0);
+      // Secondary Backup API: freeipapi.com
+      fetch("https://freeipapi.com/api/json")
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.cityName) {
+            const state = data.regionName || "";
+            applyLocation(`${data.cityName}${state ? ', ' + state : ''}`);
+          } else {
+            applyLocation("City Unavailable");
+          }
+        })
+        .catch(() => {
+          applyLocation("City Unavailable");
+        });
     });
 
-  // Updates Duration Every Second
+  // Updates Duration Counter Every Second
   setInterval(() => {
     const secondsElapsed = Math.floor((Date.now() - startTime) / 1000);
     updateCurrentSessionLog(locationString, initialDate, initialTime, secondsElapsed);
@@ -163,7 +178,7 @@ function trackSessionDurationAndLocation() {
 function updateCurrentSessionLog(location, date, time, durationSeconds) {
   let logs = JSON.parse(localStorage.getItem("inktat_session_logs") || "[]");
 
-  // Filter out any legacy entries that contained old Session IDs
+  // Filter out any legacy entries that contained old formats
   logs = logs.filter(log => log.location !== undefined);
   
   // Format Duration into mm:ss or hh:mm:ss
@@ -206,10 +221,10 @@ function renderSessionLog() {
   let logs = JSON.parse(localStorage.getItem("inktat_session_logs") || "[]");
 
   // Purge old format entries
-  logs = logs.filter(log => log.location !== undefined);
+  logs = logs.filter(log => log.location !== undefined && log.location !== "United States");
 
   if (logs.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 2rem;">No recent visitor activity recorded yet. Open InkTat.com in a new tab to trigger live tracking.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 2rem;">No recent visitor activity logged yet. Open InkTat.com in a new tab to trigger live tracking.</td></tr>`;
     return;
   }
 
@@ -218,7 +233,7 @@ function renderSessionLog() {
 
   tbody.innerHTML = logs.map(log => `
     <tr>
-      <td><strong style="color: #ffffff; font-size: 1.2rem;">${log.location || "United States"}</strong></td>
+      <td><strong style="color: #ffffff; font-size: 1.2rem;">${log.location || "Detecting City & State..."}</strong></td>
       <td>${log.date}</td>
       <td>${log.time}</td>
       <td><span style="color: #00ff66; font-weight: bold;">${log.duration || "0s"}</span></td>
