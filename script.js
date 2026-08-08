@@ -135,7 +135,7 @@ function trackSessionDurationAndLocation() {
 
   let locationString = "Detecting Location...";
 
-  // Fetch City and State from IP Geolocation API
+  // Fetch City & State from IP Geolocation API
   fetch("https://ipapi.co/json/")
     .then(res => res.json())
     .then(data => {
@@ -153,7 +153,7 @@ function trackSessionDurationAndLocation() {
       updateCurrentSessionLog(locationString, initialDate, initialTime, 0);
     });
 
-  // Active Timer Updates Duration Every Second
+  // Updates Duration Every Second
   setInterval(() => {
     const secondsElapsed = Math.floor((Date.now() - startTime) / 1000);
     updateCurrentSessionLog(locationString, initialDate, initialTime, secondsElapsed);
@@ -162,6 +162,9 @@ function trackSessionDurationAndLocation() {
 
 function updateCurrentSessionLog(location, date, time, durationSeconds) {
   let logs = JSON.parse(localStorage.getItem("inktat_session_logs") || "[]");
+
+  // Filter out any legacy entries that contained old Session IDs
+  logs = logs.filter(log => log.location !== undefined);
   
   // Format Duration into mm:ss or hh:mm:ss
   let formattedDuration = "";
@@ -185,7 +188,7 @@ function updateCurrentSessionLog(location, date, time, durationSeconds) {
     timestamp: Date.now()
   };
 
-  // Update or Add Current Active Visit
+  // Keep most recent visit at top of array
   if (logs.length > 0 && (Date.now() - logs[0].timestamp < 86400000) && logs[0].date === date && logs[0].time === time) {
     logs[0] = currentLog;
   } else {
@@ -202,17 +205,23 @@ function renderSessionLog() {
 
   let logs = JSON.parse(localStorage.getItem("inktat_session_logs") || "[]");
 
+  // Purge old format entries
+  logs = logs.filter(log => log.location !== undefined);
+
   if (logs.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No recent visitor activity logged yet. Visit the main site to record hits.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 2rem;">No recent visitor activity recorded yet. Open InkTat.com in a new tab to trigger live tracking.</td></tr>`;
     return;
   }
 
+  // Sort logs: Most recent visit at top
+  logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
   tbody.innerHTML = logs.map(log => `
     <tr>
-      <td><strong>${log.location || "United States"}</strong></td>
+      <td><strong style="color: #ffffff; font-size: 1.2rem;">${log.location || "United States"}</strong></td>
       <td>${log.date}</td>
       <td>${log.time}</td>
-      <td><span style="color: #00ff66;">${log.duration || "0s"}</span></td>
+      <td><span style="color: #00ff66; font-weight: bold;">${log.duration || "0s"}</span></td>
     </tr>
   `).join("");
 }
@@ -455,7 +464,7 @@ function renderBannedUsersTable() {
   let banned = JSON.parse(localStorage.getItem("inktat_banned_tokens") || "[]");
 
   if (banned.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;">No users or devices are currently banned.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:1.5rem;">No users or devices are currently banned.</td></tr>`;
     return;
   }
 
