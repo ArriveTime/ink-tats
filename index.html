@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InkTat.com | The Ultimate Tattoo Hub</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Accessible Header & Navigation -->
+  <header class="site-header">
+    <div class="header-container">
+      <h1 class="logo">InkTat<span>.com</span></h1>
+      <nav aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="#directory">Top Tattoo Sites</a></li>
+          <li><a href="#news">Tattoo News</a></li>
+          <li><a href="#gallery">Community Gallery</a></li>
+        </ul>
+      </nav>
+      <button id="contrast-toggle" class="btn-accessibility" aria-label="Toggle High Contrast Mode">
+        High Contrast
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    
+    <!-- Hero Banner -->
+    <section class="hero-section">
+      <h2>Welcome to InkTat</h2>
+      <p>Your directory for top tattoo resources, industry updates, and community body art sharing.</p>
+    </section>
+
+    <!-- Top US Tattoo Websites Directory -->
+    <section id="directory" class="content-section">
+      <h2>Top U.S. Tattoo Websites & Magazines</h2>
+      <p class="section-desc">Hand-selected resources for tattoo inspiration, industry news, and artist directories.</p>
+      
+      <div class="card-grid">
+        <article class="site-card">
+          <h3>Inked Magazine</h3>
+          <p>Premier lifestyle publication covering tattoo art, culture, and celebrity features.</p>
+          <a href="https://www.inkedmag.com" target="_blank" rel="noopener noreferrer" class="link-btn">Visit InkedMag.com</a>
+        </article>
+
+        <article class="site-card">
+          <h3>Tattoodo</h3>
+          <p>Global network for discovering tattoo designs, booking artists, and reading ink culture articles.</p>
+          <a href="https://www.tattoodo.com" target="_blank" rel="noopener noreferrer" class="link-btn">Visit Tattoodo.com</a>
+        </article>
+
+        <article class="site-card">
+          <h3>Tattoo.com</h3>
+          <p>Classic inspiration hub for browsing tattoo galleries, flash art, and artist portfolios.</p>
+          <a href="https://www.tattoo.com" target="_blank" rel="noopener noreferrer" class="link-btn">Visit Tattoo.com</a>
+        </article>
+
+        <article class="site-card">
+          <h3>Tattoo Life</h3>
+          <p>International coverage of tattoo conventions, master interviews, and fine body art galleries.</p>
+          <a href="https://www.tattoolife.com" target="_blank" rel="noopener noreferrer" class="link-btn">Visit TattooLife.com</a>
+        </article>
+
+        <article class="site-card">
+          <h3>World Tattoo Events</h3>
+          <p>Comprehensive global index for finding upcoming tattoo expos, conventions, and festivals.</p>
+          <a href="https://www.worldtattooevents.com" target="_blank" rel="noopener noreferrer" class="link-btn">Visit WorldTattooEvents.com</a>
+        </article>
+
+        <article class="site-card">
+          <h3>BME: Body Modification Ezine</h3>
+          <p>One of the oldest online communities documenting body modification history, art, and safety.</p>
+          <a href="https://www.bme.com" target="_blank" rel="noopener noreferrer" class="link-btn">Visit BME.com</a>
+        </article>
+      </div>
+    </section>
+
+    <!-- Tattoo News Section -->
+    <section id="news" class="content-section">
+      <h2>Latest Tattoo News & Industry Updates</h2>
+      <div class="news-container" id="news-container">
+        <!-- Dynamically populated or rendered via JS -->
+      </div>
+    </section>
+
+    <!-- Community Upload & Gallery Section -->
+    <section id="gallery" class="content-section">
+      <h2>Community Tattoo Showcase</h2>
+      <p class="section-desc">Share your ink with the InkTat community! Upload a photo and let others leave comments.</p>
+
+      <!-- Upload Form -->
+      <form id="upload-form" class="upload-form">
+        <h3>Upload Your Tattoo</h3>
+        
+        <div class="form-group">
+          <label for="tat-title">Tattoo Title / Style:</label>
+          <input type="text" id="tat-title" required placeholder="e.g., Traditional Dragon Backpiece">
+        </div>
+
+        <div class="form-group">
+          <label for="artist-name">Artist / Shop Name (Optional):</label>
+          <input type="text" id="artist-name" placeholder="e.g., Jane Doe at Iron Ink Studio">
+        </div>
+
+        <div class="form-group">
+          <label for="tat-image">Select Image File:</label>
+          <input type="file" id="tat-image" accept="image/*" required>
+        </div>
+
+        <button type="submit" class="submit-btn">Publish to Gallery</button>
+      </form>
+
+      <!-- User Uploaded Posts Display -->
+      <div id="posts-container" class="posts-grid">
+        <!-- Uploaded posts and comment boxes render here -->
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 InkTat.com — All rights reserved. Connecting tattoo enthusiasts worldwide.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
